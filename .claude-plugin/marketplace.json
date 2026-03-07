@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "arxiv_plugin",
+  "description": "ArXiv research workflow plugins for Claude Code",
+  "owner": {
+    "name": "mphipps2"
+  },
+  "plugins": [
+    {
+      "name": "arxiv-plugin",
+      "description": "ArXiv research workflow plugin — search papers, generate dashboards, deep-dive reports, and landscape analyses.",
+      "version": "0.1.0",
+      "source": "."
+    }
+  ]
+}
