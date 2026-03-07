@@ -1,6 +1,6 @@
 ---
 description: "Generate a weekly AI engineering dashboard with curated picks, topic clustering, and relevance scoring"
-argument-hint: "[--institutions] [lookback_days: N, default from config]"
+argument-hint: "[lookback_days: N, default 7]"
 allowed-tools:
   - WebFetch
   - Task
@@ -13,9 +13,7 @@ Generate a weekly AI engineering dashboard that classifies papers by topic, scor
 
 ## Arguments
 
-The user may pass:
-- `--institutions` flag: if present, run institution enrichment (expensive, skipped by default)
-- A number for `lookback_days` to override the config default (e.g. `/arxiv-dashboard 14` for two weeks)
+The user may pass a number for `lookback_days` to override the config default (e.g. `/arxiv-dashboard 14` for two weeks). They may also pass `--institutions` to include institution enrichment, but do not prompt for this — only run it if explicitly requested.
 
 ## Topic Taxonomy
 
