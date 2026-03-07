@@ -4,6 +4,7 @@ argument-hint: "[--institutions] [lookback_days: N, default from config]"
 allowed-tools:
   - mcp__plugin_arxiv-plugin_arxiv__search_papers
   - mcp__plugin_arxiv-plugin_arxiv__enrich_institutions
+  - WebFetch
   - Task
   - Bash
   - Read
@@ -94,6 +95,8 @@ Calculate `week_end` = yesterday's date and `week_start` = `week_end - lookback_
 
 ### 3. Fetch papers
 
+**Primary method — MCP tool:**
+
 Call `search_papers` with:
 - `query`: `*`
 - `categories`: the categories from config (as comma-separated string)
@@ -103,6 +106,21 @@ Call `search_papers` with:
 - `sort_by`: `submittedDate`
 
 If the result contains exactly 500 papers (truncated), make a second call splitting the date range in half to get more complete results, then deduplicate by paper ID.
+
+**Fallback — WebFetch (use if MCP tools fail, e.g. network restrictions):**
+
+If `search_papers` fails or is unavailable, fetch papers directly from the arXiv API using `WebFetch`. Build the URL:
+
+```
+https://export.arxiv.org/api/query?search_query=(cat:cs.AI+OR+cat:cs.LG+OR+cat:cs.CL+OR+cat:cs.CV+OR+cat:stat.ML)+AND+submittedDate:[YYYYMMDD0000+TO+YYYYMMDD2359]&start=0&max_results=100&sortBy=submittedDate&sortOrder=descending
+```
+
+Replace the categories with those from config (joined with `+OR+`, each prefixed with `cat:`), and replace the date placeholders with `week_start` and `week_end` (formatted as YYYYMMDD, no dashes).
+
+Use this prompt with WebFetch:
+> Extract every paper entry as a JSON array. For each paper include these exact fields: id (just the arxiv id like "2603.05504v1"), title (full exact title), authors (array of name strings), abstract (the COMPLETE summary text verbatim — do NOT summarize or shorten it), published (the date string), categories (array of all category strings), pdf_url, arxiv_url. Return ONLY the JSON array, no other text.
+
+Paginate by incrementing the `start` parameter by 100 until fewer than 100 results are returned. Merge all pages and deduplicate by paper ID.
 
 ### 4. Enrich institutions (ONLY if `--institutions` flag is present)
 
