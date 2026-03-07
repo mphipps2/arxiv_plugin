@@ -95,10 +95,10 @@ Calculate `week_end` = yesterday's date and `week_start` = `week_end - lookback_
 
 ### 3. Fetch papers
 
-Fetch papers from the arXiv API using WebFetch. Build the URL:
+Fetch papers from the arXiv Atom API using WebFetch. IMPORTANT: Always use the exact URL pattern below — do NOT use the HTML search interface (arxiv.org/search/) or any other endpoint. Build the URL:
 
 ```
-https://export.arxiv.org/api/query?search_query=(cat:cs.AI+OR+cat:cs.LG+OR+cat:cs.CL+OR+cat:cs.CV+OR+cat:stat.ML)+AND+submittedDate:[YYYYMMDD0000+TO+YYYYMMDD2359]&start=0&max_results=100&sortBy=submittedDate&sortOrder=descending
+https://arxiv.org/api/query?search_query=(cat:cs.AI+OR+cat:cs.LG+OR+cat:cs.CL+OR+cat:cs.CV+OR+cat:stat.ML)+AND+submittedDate:[YYYYMMDD0000+TO+YYYYMMDD2359]&start=0&max_results=100&sortBy=submittedDate&sortOrder=descending
 ```
 
 Replace the categories with those from config (joined with `+OR+`, each prefixed with `cat:`), and replace the date placeholders with `week_start` and `week_end` (formatted as YYYYMMDD, no dashes).
