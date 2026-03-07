@@ -153,13 +153,20 @@ def search_papers(
     if cached is not None:
         return cached
 
-    # Build query string
-    parts = [f"all:{query}"]
+    # Build query string — bare "*" wildcards cause HTTP 500 from arXiv API
     cats = categories or []
-    if cats:
-        cat_expr = " OR ".join(f"cat:{c}" for c in cats)
-        parts.append(f"({cat_expr})")
-    q = " AND ".join(parts)
+    if query == "*":
+        # Category-only query: use cat filter as the entire query
+        if cats:
+            q = " OR ".join(f"cat:{c}" for c in cats)
+        else:
+            q = "cat:cs.AI"  # fallback to avoid empty query
+    else:
+        parts = [f"all:{query}"]
+        if cats:
+            cat_expr = " OR ".join(f"cat:{c}" for c in cats)
+            parts.append(f"({cat_expr})")
+        q = " AND ".join(parts)
 
     # Date range
     if date_from or date_to:
