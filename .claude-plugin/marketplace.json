@@ -10,7 +10,7 @@
       "name": "arxiv-plugin",
       "description": "ArXiv research workflow plugin — search papers, generate dashboards, deep-dive reports, and landscape analyses.",
       "version": "0.1.0",
-      "source": "."
+      "source": "./plugins/arxiv-plugin"
     }
   ]
 }
