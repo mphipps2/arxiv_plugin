@@ -1,0 +1,4 @@
+arxiv
+requests
+mcp[cli]
+pyyaml

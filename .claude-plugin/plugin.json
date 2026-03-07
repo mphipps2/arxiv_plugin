@@ -1,0 +1,5 @@
+{
+  "name": "arxiv-plugin",
+  "version": "0.1.0",
+  "description": "ArXiv research workflow plugin for Claude Code — search papers, generate dashboards, deep-dive reports, and landscape analyses."
+}

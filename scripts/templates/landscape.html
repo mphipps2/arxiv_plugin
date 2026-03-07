@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Research Landscape — {{ topic }}{% endblock %}
+{% block header %}Research Landscape{% endblock %}
+{% block header_right %}{{ date_range.from }} to {{ date_range.to }}{% endblock %}
+
+{% block content %}
+<!-- Topic Header -->
+<div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg p-8 mb-8 text-white">
+  <h2 class="text-3xl font-bold mb-2">{{ topic }}</h2>
+  <p class="opacity-80 text-sm">Landscape analysis &middot; {{ date_range.from }} to {{ date_range.to }}</p>
+</div>
+
+<!-- Executive Summary -->
+<div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
+  <h3 class="text-lg font-semibold mb-3">Executive Summary</h3>
+  <div class="text-gray-700 leading-relaxed whitespace-pre-line">{{ executive_summary }}</div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+  <!-- Recent Papers Timeline -->
+  <div class="bg-white rounded-lg shadow-sm border p-6">
+    <h3 class="text-lg font-semibold mb-4">Recent Papers</h3>
+    <div style="max-height: 300px;">
+      <canvas id="timelineChart"></canvas>
+    </div>
+    <div class="mt-4 max-h-64 overflow-y-auto">
+      {% for p in recent_papers[:20] %}
+      <div class="border-b border-gray-100 py-2 text-sm">
+        <div class="font-medium text-blue-700">{{ p.title }}</div>
+        <div class="text-xs text-gray-500">{{ p.date }} &middot; relevance: {{ p.relevance_score | default("—") }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Institution Activity -->
+  <div class="bg-white rounded-lg shadow-sm border p-6">
+    <h3 class="text-lg font-semibold mb-4">Institution Activity</h3>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b text-left text-gray-500">
+          <th class="py-2">Institution</th>
+          <th class="py-2 text-right">Papers</th>
+          <th class="py-2 text-right">Activity</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inst in institutions %}
+        <tr class="border-b border-gray-100">
+          <td class="py-2 font-medium">{{ inst.name }}</td>
+          <td class="py-2 text-right">{{ inst.papers }}</td>
+          <td class="py-2 text-right">
+            <span class="inline-block px-2 py-0.5 rounded text-xs
+              {% if inst.activity_level == 'high' %}bg-green-100 text-green-700
+              {% elif inst.activity_level == 'medium' %}bg-yellow-100 text-yellow-700
+              {% else %}bg-gray-100 text-gray-600{% endif %}">
+              {{ inst.activity_level }}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Methodology Taxonomy -->
+{% if methodologies %}
+<div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
+  <h3 class="text-lg font-semibold mb-4">Methodology Taxonomy</h3>
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for m in methodologies %}
+    <div class="border rounded-lg p-4">
+      <div class="font-medium mb-1">{{ m.name }}</div>
+      <div class="text-sm text-gray-500">{{ m.papers }} papers</div>
+      <div class="mt-2">
+        <span class="text-xs px-2 py-0.5 rounded
+          {% if m.trend == 'rising' %}bg-green-100 text-green-700
+          {% elif m.trend == 'declining' %}bg-red-100 text-red-700
+          {% else %}bg-gray-100 text-gray-600{% endif %}">
+          {{ m.trend }}
+        </span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Key Papers -->
+{% if key_papers %}
+<div class="bg-white rounded-lg shadow-sm border p-6">
+  <h3 class="text-lg font-semibold mb-4">Key Papers</h3>
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b text-left text-gray-500">
+        <th class="py-2">Title</th>
+        <th class="py-2 text-right">Citations</th>
+        <th class="py-2 text-right">Type</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in key_papers %}
+      <tr class="border-b border-gray-100">
+        <td class="py-2 font-medium">{{ p.title }}</td>
+        <td class="py-2 text-right">{{ p.citation_count | default("—") }}</td>
+        <td class="py-2 text-right">
+          {% if p.foundational %}<span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">foundational</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Aggregate papers by date for timeline
+  const papers = {{ recent_papers | tojson }};
+  const dateCounts = {};
+  papers.forEach(p => {
+    dateCounts[p.date] = (dateCounts[p.date] || 0) + 1;
+  });
+  const sortedDates = Object.keys(dateCounts).sort();
+
+  const timeCtx = document.getElementById('timelineChart').getContext('2d');
+  new Chart(timeCtx, {
+    type: 'line',
+    data: {
+      labels: sortedDates,
+      datasets: [{
+        label: 'Papers',
+        data: sortedDates.map(d => dateCounts[d]),
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59,130,246,0.1)',
+        fill: true, tension: 0.3,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
+</script>
+{% endblock %}

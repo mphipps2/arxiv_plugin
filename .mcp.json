@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "arxiv": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["server/arxiv_mcp_server.py"],
+      "env": {
+        "PYTHONUNBUFFERED": "1"
+      }
+    }
+  }
+}

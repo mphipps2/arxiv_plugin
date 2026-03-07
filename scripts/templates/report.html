@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Paper Report — {{ paper.title[:60] }}{% endblock %}
+{% block header %}Paper Deep-Dive{% endblock %}
+{% block header_right %}{{ paper.id }}{% endblock %}
+
+{% block content %}
+<!-- Paper Header -->
+<div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
+  <h2 class="text-2xl font-bold mb-2">{{ paper.title }}</h2>
+  <div class="text-sm text-gray-600 mb-3">{{ paper.authors | join(', ') }}</div>
+  <div class="flex flex-wrap gap-2 mb-3">
+    {% for cat in paper.categories %}
+    <span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">{{ cat }}</span>
+    {% endfor %}
+  </div>
+  <div class="flex gap-4 text-sm">
+    <span class="text-gray-500">Published: {{ paper.published }}</span>
+    <a href="{{ paper.arxiv_url }}" target="_blank" class="text-blue-600 hover:underline">arXiv</a>
+    <a href="{{ paper.pdf_url }}" target="_blank" class="text-blue-600 hover:underline">PDF</a>
+  </div>
+</div>
+
+<!-- TL;DR -->
+<div class="bg-amber-50 border border-amber-200 rounded-lg p-6 mb-8">
+  <h3 class="text-sm font-semibold text-amber-800 uppercase tracking-wide mb-2">TL;DR</h3>
+  <p class="text-amber-900">{{ analysis.tldr }}</p>
+</div>
+
+<!-- Analysis Sections -->
+{% set sections = [
+  ("Problem", analysis.problem, "blue"),
+  ("Approach", analysis.approach, "green"),
+  ("Results", analysis.results, "purple"),
+  ("Limitations", analysis.limitations, "red"),
+  ("Related Work", analysis.related_work, "gray"),
+  ("Relevance", analysis.relevance, "indigo"),
+] %}
+
+{% for title, content, color in sections %}
+{% if content %}
+<div class="bg-white rounded-lg shadow-sm border p-6 mb-4">
+  <h3 class="text-sm font-semibold text-{{ color }}-700 uppercase tracking-wide mb-3">{{ title }}</h3>
+  <div class="text-gray-700 leading-relaxed">{{ content }}</div>
+</div>
+{% endif %}
+{% endfor %}
+{% endblock %}

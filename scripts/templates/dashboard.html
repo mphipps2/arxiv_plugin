@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}ArXiv Dashboard — {{ date }}{% endblock %}
+{% block header %}ArXiv Daily Dashboard{% endblock %}
+{% block header_right %}{{ date }}{% endblock %}
+
+{% block content %}
+<!-- Summary Stats -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+  <div class="bg-white rounded-lg shadow-sm border p-6 text-center">
+    <div class="text-3xl font-bold text-blue-600">{{ total_papers }}</div>
+    <div class="text-sm text-gray-500 mt-1">Total Papers</div>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm border p-6 text-center">
+    <div class="text-3xl font-bold text-green-600">{{ categories | length }}</div>
+    <div class="text-sm text-gray-500 mt-1">Categories</div>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm border p-6 text-center">
+    <div class="text-3xl font-bold text-purple-600">{{ institutions | length }}</div>
+    <div class="text-sm text-gray-500 mt-1">Institutions</div>
+  </div>
+</div>
+
+<!-- Category Distribution Chart -->
+<div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
+  <h2 class="text-lg font-semibold mb-4">Papers by Category</h2>
+  <div style="max-height: 300px;">
+    <canvas id="categoryChart"></canvas>
+  </div>
+</div>
+
+<!-- Institution Leaderboard -->
+{% if institutions %}
+<div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
+  <h2 class="text-lg font-semibold mb-4">Institution Leaderboard</h2>
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b text-left text-gray-500">
+        <th class="py-2 pr-4">#</th>
+        <th class="py-2 pr-4">Institution</th>
+        <th class="py-2 text-right">Papers</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for inst in institutions %}
+      <tr class="border-b border-gray-100 hover:bg-gray-50">
+        <td class="py-2 pr-4 text-gray-400">{{ loop.index }}</td>
+        <td class="py-2 pr-4 font-medium">{{ inst.name }}</td>
+        <td class="py-2 text-right">{{ inst.count }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- Paper Listing -->
+<div class="bg-white rounded-lg shadow-sm border p-6">
+  <h2 class="text-lg font-semibold mb-4">Papers ({{ papers | length }})</h2>
+  <div class="mb-4">
+    <input type="text" id="paperFilter" placeholder="Filter papers..."
+           class="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+  </div>
+  <div id="paperList">
+    {% for paper in papers %}
+    <div class="paper-item border-b border-gray-100 py-4" data-searchable="{{ paper.title | lower }} {{ paper.authors | join(' ') | lower }}">
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex-1">
+          <a href="{{ paper.pdf_url }}" target="_blank" class="text-blue-600 hover:underline font-medium">{{ paper.title }}</a>
+          <div class="text-xs text-gray-500 mt-1">{{ paper.authors[:5] | join(', ') }}{% if paper.authors | length > 5 %} et al.{% endif %}</div>
+          <div class="flex gap-2 mt-2">
+            {% for cat in paper.categories[:3] %}
+            <span class="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded">{{ cat }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        <button class="collapse-toggle text-xs text-blue-500 hover:underline whitespace-nowrap" data-target="abs-{{ loop.index }}">abstract</button>
+      </div>
+      <div id="abs-{{ loop.index }}" class="collapse-content mt-3 text-sm text-gray-600 bg-gray-50 rounded p-3">
+        {{ paper.abstract }}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Category chart
+  const catCtx = document.getElementById('categoryChart').getContext('2d');
+  new Chart(catCtx, {
+    type: 'bar',
+    data: {
+      labels: {{ categories | map(attribute='name') | list | tojson }},
+      datasets: [{
+        label: 'Papers',
+        data: {{ categories | map(attribute='count') | list | tojson }},
+        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'],
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
+
+  // Filter
+  document.getElementById('paperFilter').addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('.paper-item').forEach(el => {
+      el.style.display = el.dataset.searchable.includes(q) ? '' : 'none';
+    });
+  });
+</script>
+{% endblock %}

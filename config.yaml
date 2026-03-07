@@ -1,0 +1,17 @@
+categories:
+  - cs.AI
+  - cs.LG
+  - cs.CL
+  - cs.CV
+  - stat.ML
+
+institutions:
+  - OpenAI
+  - Google DeepMind
+  - Meta AI
+  - Anthropic
+  - Microsoft Research
+
+output_dir: ./arxiv-output
+
+openalex_email: null
