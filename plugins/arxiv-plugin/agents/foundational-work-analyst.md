@@ -10,8 +10,6 @@ description: |
 model: sonnet
 color: cyan
 tools:
-  - mcp__plugin_arxiv-plugin_arxiv__search_papers
-  - mcp__plugin_arxiv-plugin_arxiv__get_paper
   - WebFetch
 ---
 
@@ -23,20 +21,13 @@ Given a **topic**, find the seminal papers that established the field and the mo
 
 ## Process
 
-1. Use `search_papers` with the topic, sorted by relevance, with a broad date range (no date filter) and a high max_results (50+).
+1. Search for papers using WebFetch to fetch `https://export.arxiv.org/api/query?search_query=all:<TOPIC>&max_results=50&sortBy=relevance` with prompt: "Extract each paper entry as a JSON array. For each paper include: id (just the arxiv id like '2603.05504v1'), title, authors (array), abstract (COMPLETE text verbatim), published, categories (array), pdf_url, arxiv_url. Return ONLY the JSON array."
 2. From the results, identify papers that appear foundational based on:
    - Being frequently referenced in other abstracts
    - Having titles suggesting they introduce a new method or framework
    - Being older papers that likely have high citation counts
-3. Use `get_paper` on the top 5–10 candidates to get full metadata.
+3. For the top 5–10 candidates, fetch full metadata using WebFetch with `https://export.arxiv.org/api/query?id_list=<arxiv_id>` and prompt: "Extract the paper as JSON with fields: id, title, authors (array), abstract (COMPLETE text verbatim), published, categories (array), pdf_url, arxiv_url. Return ONLY the JSON object."
 4. Mark papers as "foundational" if they appear to be seminal works, otherwise they are "significant".
-
-## Fallback — WebFetch
-
-If MCP tools fail (e.g. network restrictions in sandbox environments), use WebFetch to query the arXiv API directly:
-
-- **search_papers fallback**: Fetch `https://export.arxiv.org/api/query?search_query=all:<TOPIC>&max_results=50&sortBy=relevance` with prompt: "Extract each paper entry as a JSON array. For each paper include: id, title, authors (array), abstract (COMPLETE text verbatim), published, categories (array), pdf_url, arxiv_url. Return ONLY the JSON array."
-- **get_paper fallback**: Fetch `https://export.arxiv.org/api/query?id_list=<arxiv_id>` with prompt: "Extract the paper as JSON with fields: id, title, authors (array), abstract (COMPLETE text verbatim), published, categories (array), pdf_url, arxiv_url. Return ONLY the JSON object."
 
 ## Output Format
 

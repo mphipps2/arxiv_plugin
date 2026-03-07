@@ -2,8 +2,6 @@
 description: "Generate a weekly AI engineering dashboard with curated picks, topic clustering, and relevance scoring"
 argument-hint: "[--institutions] [lookback_days: N, default from config]"
 allowed-tools:
-  - mcp__plugin_arxiv-plugin_arxiv__search_papers
-  - mcp__plugin_arxiv-plugin_arxiv__enrich_institutions
   - WebFetch
   - Task
   - Bash
@@ -31,9 +29,11 @@ The user may pass:
 - `pretraining-scaling` — Pretraining data curation & scaling laws
 - `rlhf-preference` — RLHF / RLAIF / preference learning
 - `fine-tuning` — Fine-tuning methods (LoRA, PEFT, instruction tuning)
+- `continual-learning` — Continual / lifelong learning
 
 **Retrieval & Knowledge**
 - `rag-retrieval` — RAG architectures & retrieval methods
+- `memory-replay` — Memory replay & external memory systems
 - `structured-data` — Structured data / SQL / tabular reasoning
 
 **Safety & Reliability**
@@ -55,8 +55,8 @@ The user may pass:
 
 **Topic-to-Group Mapping:**
 - `long-context-memory`, `multimodal`, `reasoning-cot`, `small-efficient` -> "Model Architecture & Capabilities"
-- `pretraining-scaling`, `rlhf-preference`, `fine-tuning` -> "Training & Optimization"
-- `rag-retrieval`, `structured-data` -> "Retrieval & Knowledge"
+- `pretraining-scaling`, `rlhf-preference`, `fine-tuning`, `continual-learning` -> "Training & Optimization"
+- `rag-retrieval`, `memory-replay`, `structured-data` -> "Retrieval & Knowledge"
 - `robustness-redteam`, `hallucination`, `uncertainty-calibration` -> "Safety & Reliability"
 - `code-swe`, `scientific-domain`, `synthetic-data` -> "Applications"
 - `multi-agent`, `llm-judge`, `world-models` -> "Emerging"
@@ -70,7 +70,9 @@ The user may pass:
 - `pretraining-scaling`: "Pretraining data curation & scaling laws"
 - `rlhf-preference`: "RLHF / RLAIF / preference learning"
 - `fine-tuning`: "Fine-tuning methods (LoRA, PEFT, instruction tuning)"
+- `continual-learning`: "Continual / lifelong learning"
 - `rag-retrieval`: "RAG architectures & retrieval methods"
+- `memory-replay`: "Memory replay & external memory systems"
 - `structured-data`: "Structured data / SQL / tabular reasoning"
 - `robustness-redteam`: "Robustness, jailbreaks & red-teaming"
 - `hallucination`: "Hallucination detection & mitigation"
@@ -95,21 +97,7 @@ Calculate `week_end` = yesterday's date and `week_start` = `week_end - lookback_
 
 ### 3. Fetch papers
 
-**Primary method — MCP tool:**
-
-Call `search_papers` with:
-- `query`: `*`
-- `categories`: the categories from config (as comma-separated string)
-- `date_from`: week_start (YYYY-MM-DD)
-- `date_to`: week_end (YYYY-MM-DD)
-- `max_results`: 500
-- `sort_by`: `submittedDate`
-
-If the result contains exactly 500 papers (truncated), make a second call splitting the date range in half to get more complete results, then deduplicate by paper ID.
-
-**Fallback — WebFetch (use if MCP tools fail, e.g. network restrictions):**
-
-If `search_papers` fails or is unavailable, fetch papers directly from the arXiv API using `WebFetch`. Build the URL:
+Fetch papers from the arXiv API using WebFetch. Build the URL:
 
 ```
 https://export.arxiv.org/api/query?search_query=(cat:cs.AI+OR+cat:cs.LG+OR+cat:cs.CL+OR+cat:cs.CV+OR+cat:stat.ML)+AND+submittedDate:[YYYYMMDD0000+TO+YYYYMMDD2359]&start=0&max_results=100&sortBy=submittedDate&sortOrder=descending
@@ -124,7 +112,11 @@ Paginate by incrementing the `start` parameter by 100 until fewer than 100 resul
 
 ### 4. Enrich institutions (ONLY if `--institutions` flag is present)
 
-If the user passed `--institutions`, take the arXiv IDs from the returned papers and call `enrich_institutions` with them (batch in groups of 20). Otherwise, skip this step entirely — set `institutions` to an empty array `[]`.
+If the user passed `--institutions`, enrich papers with institutional affiliations via the OpenAlex API. For each arXiv ID, use WebFetch to fetch `https://api.openalex.org/works?filter=ids.arxiv:<ARXIV_ID>` with prompt: "Extract institution names from the authorships. Return a JSON object with fields: arxiv_id and institutions (array of {name, country} objects). Return ONLY the JSON object."
+
+Batch these lookups (don't fire hundreds at once — do ~20 at a time). Aggregate institution counts across all papers.
+
+Otherwise, skip this step entirely — set `institutions` to an empty array `[]`.
 
 ### 5. Parallel classification
 

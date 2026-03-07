@@ -10,8 +10,6 @@ description: |
 model: sonnet
 color: blue
 tools:
-  - mcp__plugin_arxiv-plugin_arxiv__search_papers
-  - mcp__plugin_arxiv-plugin_arxiv__get_paper
   - WebFetch
 ---
 
@@ -23,17 +21,10 @@ Given a **topic** and a **lookback period**, search for recent papers, identify 
 
 ## Process
 
-1. Use `search_papers` with the topic as the query, filtering by the provided date range and relevant categories.
-2. For the top 5–10 most relevant papers, use `get_paper` to retrieve full metadata.
+1. Search for papers using WebFetch to fetch `https://export.arxiv.org/api/query?search_query=all:<TOPIC>+AND+submittedDate:[YYYYMMDD0000+TO+YYYYMMDD2359]&max_results=50&sortBy=relevance` with prompt: "Extract each paper entry as a JSON array. For each paper include: id (just the arxiv id like '2603.05504v1'), title, authors (array), abstract (COMPLETE text verbatim), published, categories (array), pdf_url, arxiv_url. Return ONLY the JSON array."
+2. For the top 5–10 most relevant papers, fetch full metadata using WebFetch with `https://export.arxiv.org/api/query?id_list=<arxiv_id>` and prompt: "Extract the paper as JSON with fields: id, title, authors (array), abstract (COMPLETE text verbatim), published, categories (array), pdf_url, arxiv_url. Return ONLY the JSON object."
 3. Identify 3–5 emerging themes or trends from the paper titles and abstracts.
 4. Estimate publication velocity (papers per week).
-
-## Fallback — WebFetch
-
-If MCP tools fail (e.g. network restrictions in sandbox environments), use WebFetch to query the arXiv API directly:
-
-- **search_papers fallback**: Fetch `https://export.arxiv.org/api/query?search_query=all:<TOPIC>+AND+submittedDate:[YYYYMMDD0000+TO+YYYYMMDD2359]&max_results=50&sortBy=relevance` with prompt: "Extract each paper entry as a JSON array. For each paper include: id, title, authors (array), abstract (COMPLETE text verbatim), published, categories (array), pdf_url, arxiv_url. Return ONLY the JSON array."
-- **get_paper fallback**: Fetch `https://export.arxiv.org/api/query?id_list=<arxiv_id>` with prompt: "Extract the paper as JSON with fields: id, title, authors (array), abstract (COMPLETE text verbatim), published, categories (array), pdf_url, arxiv_url. Return ONLY the JSON object."
 
 ## Output Format
 

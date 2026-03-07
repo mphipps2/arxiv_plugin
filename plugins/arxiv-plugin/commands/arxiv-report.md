@@ -2,11 +2,9 @@
 description: "Generate a deep-dive analysis report for an arXiv paper"
 argument-hint: "<arxiv-id or search query>"
 allowed-tools:
-  - mcp__plugin_arxiv-plugin_arxiv__get_paper
-  - mcp__plugin_arxiv-plugin_arxiv__search_papers
+  - WebFetch
   - Bash
   - Read
-  - WebFetch
 model: sonnet
 ---
 
@@ -20,13 +18,9 @@ The user provides either:
 
 ## Steps
 
-1. **Resolve paper**: If the argument looks like an arXiv ID (contains digits and dots, possibly with a version suffix like v1), call `get_paper` with it. Otherwise, call `search_papers` with the argument as a query (max_results=5), show the user the top results, and use the first result.
+1. **Resolve paper**: If the argument looks like an arXiv ID (contains digits and dots, possibly with a version suffix like v1), use WebFetch to fetch `https://export.arxiv.org/api/query?id_list=<arxiv_id>` with prompt: "Extract the paper as JSON with fields: id, title, authors (array), abstract (COMPLETE text verbatim), published, categories (array), pdf_url, arxiv_url. Return ONLY the JSON object."
 
-   **Fallback — WebFetch (use if MCP tools fail, e.g. network restrictions):**
-
-   If `get_paper` fails, use WebFetch to fetch `https://export.arxiv.org/api/query?id_list=<arxiv_id>` with prompt: "Extract the paper as JSON with fields: id, title, authors (array), abstract (COMPLETE text verbatim), published, categories (array), pdf_url, arxiv_url. Return ONLY the JSON object."
-
-   If `search_papers` fails, use WebFetch to fetch `https://export.arxiv.org/api/query?search_query=all:<query>&max_results=5&sortBy=relevance` with prompt: "Extract each paper entry as a JSON array. For each paper include: id (just the arxiv id like '2603.05504v1'), title, authors (array), abstract (COMPLETE text verbatim), published, categories (array), pdf_url, arxiv_url. Return ONLY the JSON array."
+   Otherwise, search by query: use WebFetch to fetch `https://export.arxiv.org/api/query?search_query=all:<query>&max_results=5&sortBy=relevance` with prompt: "Extract each paper entry as a JSON array. For each paper include: id (just the arxiv id like '2603.05504v1'), title, authors (array), abstract (COMPLETE text verbatim), published, categories (array), pdf_url, arxiv_url. Return ONLY the JSON array." Show the user the top results and use the first result.
 
 2. **Fetch PDF context**: Use WebFetch to read the paper's PDF URL to get additional context from the paper content. If WebFetch fails, proceed with the abstract alone.
 
