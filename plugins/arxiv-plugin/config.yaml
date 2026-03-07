@@ -12,6 +12,8 @@ institutions:
   - Anthropic
   - Microsoft Research
 
+lookback_days: 7
+
 output_dir: ./arxiv-output
 
 openalex_email: null
