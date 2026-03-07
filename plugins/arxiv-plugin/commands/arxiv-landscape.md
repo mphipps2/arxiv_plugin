@@ -7,6 +7,7 @@ allowed-tools:
   - mcp__plugin_arxiv-plugin_arxiv__get_daily_papers
   - mcp__plugin_arxiv-plugin_arxiv__enrich_institutions
   - mcp__plugin_arxiv-plugin_arxiv__search_by_institution
+  - WebFetch
   - Bash
   - Read
   - Task

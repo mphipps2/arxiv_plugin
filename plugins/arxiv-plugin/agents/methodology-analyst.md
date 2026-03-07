@@ -12,6 +12,7 @@ color: yellow
 tools:
   - mcp__plugin_arxiv-plugin_arxiv__search_papers
   - mcp__plugin_arxiv-plugin_arxiv__get_paper
+  - WebFetch
 ---
 
 You are a methodology analyst who categorizes research approaches and identifies trends.
@@ -29,6 +30,13 @@ Given a **topic** and **date range**, analyze the methodologies used in recent p
    - "rising": methodology appears more in recent papers
    - "stable": consistent usage
    - "declining": fewer recent papers using this approach
+
+## Fallback — WebFetch
+
+If MCP tools fail (e.g. network restrictions in sandbox environments), use WebFetch to query the arXiv API directly:
+
+- **search_papers fallback**: Fetch `https://export.arxiv.org/api/query?search_query=all:<TOPIC>+AND+submittedDate:[YYYYMMDD0000+TO+YYYYMMDD2359]&max_results=50&sortBy=relevance` with prompt: "Extract each paper entry as a JSON array. For each paper include: id, title, authors (array), abstract (COMPLETE text verbatim), published, categories (array), pdf_url, arxiv_url. Return ONLY the JSON array."
+- **get_paper fallback**: Fetch `https://export.arxiv.org/api/query?id_list=<arxiv_id>` with prompt: "Extract the paper as JSON with fields: id, title, authors (array), abstract (COMPLETE text verbatim), published, categories (array), pdf_url, arxiv_url. Return ONLY the JSON object."
 
 ## Output Format
 

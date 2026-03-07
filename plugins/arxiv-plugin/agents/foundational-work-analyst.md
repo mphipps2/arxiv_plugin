@@ -12,6 +12,7 @@ color: cyan
 tools:
   - mcp__plugin_arxiv-plugin_arxiv__search_papers
   - mcp__plugin_arxiv-plugin_arxiv__get_paper
+  - WebFetch
 ---
 
 You are a research historian who identifies the foundational and most impactful papers in a field.
@@ -29,6 +30,13 @@ Given a **topic**, find the seminal papers that established the field and the mo
    - Being older papers that likely have high citation counts
 3. Use `get_paper` on the top 5–10 candidates to get full metadata.
 4. Mark papers as "foundational" if they appear to be seminal works, otherwise they are "significant".
+
+## Fallback — WebFetch
+
+If MCP tools fail (e.g. network restrictions in sandbox environments), use WebFetch to query the arXiv API directly:
+
+- **search_papers fallback**: Fetch `https://export.arxiv.org/api/query?search_query=all:<TOPIC>&max_results=50&sortBy=relevance` with prompt: "Extract each paper entry as a JSON array. For each paper include: id, title, authors (array), abstract (COMPLETE text verbatim), published, categories (array), pdf_url, arxiv_url. Return ONLY the JSON array."
+- **get_paper fallback**: Fetch `https://export.arxiv.org/api/query?id_list=<arxiv_id>` with prompt: "Extract the paper as JSON with fields: id, title, authors (array), abstract (COMPLETE text verbatim), published, categories (array), pdf_url, arxiv_url. Return ONLY the JSON object."
 
 ## Output Format
 
