@@ -90,6 +90,8 @@ Use Read to load `${CLAUDE_PLUGIN_ROOT}/config.yaml`. Get `categories`, `lookbac
 
 Calculate `week_end` = yesterday's date and `week_start` = `week_end - lookback_days + 1`. If the user provided a custom lookback_days argument, use that instead of the config value.
 
+**IMPORTANT:** The date range is `week_start` through `week_end` (yesterday). Do NOT include today's date — today's papers are still arriving and would produce incomplete results. Pass exactly these dates to both `fetch_papers.py` and `assemble_dashboard.py`.
+
 ### 2. Fetch papers (Bash)
 
 Run the fetch script to download papers day-by-day, with automatic caching:
@@ -139,9 +141,15 @@ This outputs the path to the assembled JSON file.
 
 ### 5. Curate & narrate (LLM)
 
-Use Read to load the assembled JSON file. Look at the `high_relevance_papers` array (typically 15-30 papers).
+Use Read to load the assembled JSON file. Look at the `high_relevance_papers` array (typically 15-50 papers). If the array is very large (>100), focus on the first 50 for curation.
 
-**Top picks:** Select 5-10 must-reads from the high-relevance papers. For each, write a 1-2 sentence rationale explaining why this matters to an AI engineer. Include: id, title, authors, categories, pdf_url, arxiv_url, rationale, topic, group.
+**Top picks:** Select 5-10 must-reads from the high-relevance papers. When ranking candidates, weight author and institutional prominence alongside technical merit:
+
+- Papers from top labs (OpenAI, Google DeepMind, Anthropic, Meta AI, Microsoft Research, etc.) or well-known researchers in their field should be given a significant boost — these tend to have higher impact, better follow-through, and more community attention.
+- A strong paper from a leading group should generally rank above an equally strong paper from an unknown group.
+- However, genuinely breakthrough work from any institution still deserves a top pick slot.
+
+For each pick, write a 1-2 sentence rationale explaining why this matters to an AI engineer. Include: id, title, authors, categories, pdf_url, arxiv_url, rationale, topic, group.
 
 **Weekly narrative:** Write 2-3 paragraphs summarizing the week's key developments in AI/ML research. Mention specific papers and trends. Write for an AI engineer audience — focus on what's actionable and noteworthy.
 

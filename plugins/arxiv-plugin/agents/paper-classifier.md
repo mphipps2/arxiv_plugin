@@ -15,9 +15,18 @@ You will be given:
 - `papers_path`: path to a JSON file containing papers to classify (with fields: id, title, abstract, categories)
 - `output_path`: path where you must write the classification output JSON
 
-1. Use Read to load the papers JSON from `papers_path`
-2. Classify every paper
-3. Use Bash to write the output JSON to `output_path` (use `python3 -c` with json.dumps or `cat <<'EOF'`)
+**IMPORTANT:** The papers JSON file may be very large (thousands of lines). Do NOT use Read to load it — it will be truncated. Instead, use Bash with a Python script to extract the paper data:
+
+```bash
+python3 -c "
+import json
+data = json.load(open('PAPERS_PATH'))
+for p in data['papers']:
+    print(json.dumps({'id': p['id'], 'title': p['title'], 'abstract': p['abstract'][:300], 'categories': p['categories']}))
+"
+```
+
+Then classify all papers and use Bash to write the output JSON to `output_path`.
 
 ## Topic Taxonomy
 
@@ -67,9 +76,11 @@ You will be given:
 
 ## Relevance Criteria
 
-- **high**: directly applicable to building/deploying AI systems — new technique, tool, benchmark result, or architectural insight
-- **medium**: relevant methodology or background — useful context but not immediately actionable
-- **low**: primarily theoretical, narrow domain application, or tangential to AI engineering
+Apply these strictly. Aim for roughly 10-15% high, 30-40% medium, and 50-60% low across a typical batch.
+
+- **high**: a breakthrough or directly usable result for AI engineers — e.g. a new SOTA method with code/weights, a production-ready technique, a major benchmark that changes how we evaluate systems, or a security/safety finding with immediate operational implications. Most papers are NOT high.
+- **medium**: solid contribution with relevant methodology — improves understanding or provides useful context, but requires adaptation before it's actionable (e.g. incremental improvements, domain-specific applications of general methods, surveys, position papers)
+- **low**: primarily theoretical, narrow/niche domain application, marginal improvements on existing benchmarks, or tangential to AI engineering practice
 
 ## Instructions
 

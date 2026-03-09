@@ -52,14 +52,14 @@ def _paper_to_dict(paper):
     }
 
 
-def fetch_day(date_str, categories, max_results=200):
+def fetch_day(date_str, categories, max_results=500):
     """Fetch all papers for a single day from arXiv."""
     cat_expr = " OR ".join(f"cat:{c}" for c in categories)
     d = date_str.replace("-", "")
     query = f"({cat_expr}) AND submittedDate:[{d}0000 TO {d}2359]"
 
     _rate_limit()
-    client = arxiv.Client()
+    client = arxiv.Client(page_size=100, delay_seconds=3.0)
     search = arxiv.Search(
         query=query,
         max_results=max_results,
