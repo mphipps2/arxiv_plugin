@@ -25,6 +25,9 @@ output_dir.mkdir(parents=True, exist_ok=True)
 
 data = json.loads(sys.stdin.read())
 
+tailwind_css_path = TEMPLATE_DIR / "tailwind.built.css"
+data["tailwind_css"] = tailwind_css_path.read_text() if tailwind_css_path.exists() else ""
+
 env = Environment(loader=FileSystemLoader(str(TEMPLATE_DIR)), autoescape=False)
 template = env.get_template("report.html")
 

@@ -102,7 +102,8 @@
       </div>
       <p class="text-sm text-indigo-700 font-medium mb-2">{{ pick.rationale }}</p>
       <div class="text-xs text-gray-500">{{ pick.authors[:4] | join(', ') }}{% if pick.authors | length > 4 %} et al.{% endif %}</div>
-      <div class="flex gap-2 mt-3">
+      <div class="flex items-center gap-2 mt-3">
+        <code class="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-mono">{{ pick.id }}</code>
         <a href="{{ pick.pdf_url }}" target="_blank" class="text-xs text-blue-600 hover:underline">PDF</a>
         <a href="{{ pick.arxiv_url }}" target="_blank" class="text-xs text-blue-600 hover:underline">arXiv</a>
       </div>
@@ -146,7 +147,7 @@
           <div class="flex items-start justify-between gap-3">
             <div class="flex-1">
               <a href="{{ paper.arxiv_url | default(paper.pdf_url) }}" target="_blank" class="text-sm font-medium text-blue-600 hover:underline">{{ paper.title }}</a>
-              <div class="text-xs text-gray-500 mt-1">{{ paper.authors[:5] | join(', ') }}{% if paper.authors | length > 5 %} et al.{% endif %} &middot; {{ paper.published }}</div>
+              <div class="text-xs text-gray-500 mt-1"><code class="bg-gray-100 text-gray-600 px-1 py-0.5 rounded font-mono">{{ paper.id }}</code> &middot; {{ paper.authors[:5] | join(', ') }}{% if paper.authors | length > 5 %} et al.{% endif %} &middot; {{ paper.published }}</div>
             </div>
             <div class="flex items-center gap-2">
               {% if paper.relevance == 'high' %}
@@ -171,7 +172,7 @@
               <div class="flex items-start justify-between gap-3">
                 <div class="flex-1">
                   <a href="{{ paper.arxiv_url | default(paper.pdf_url) }}" target="_blank" class="text-sm font-medium text-blue-600 hover:underline">{{ paper.title }}</a>
-                  <div class="text-xs text-gray-500 mt-1">{{ paper.authors[:5] | join(', ') }}{% if paper.authors | length > 5 %} et al.{% endif %} &middot; {{ paper.published }}</div>
+                  <div class="text-xs text-gray-500 mt-1"><code class="bg-gray-100 text-gray-600 px-1 py-0.5 rounded font-mono">{{ paper.id }}</code> &middot; {{ paper.authors[:5] | join(', ') }}{% if paper.authors | length > 5 %} et al.{% endif %} &middot; {{ paper.published }}</div>
                 </div>
                 <div class="flex items-center gap-2">
                   <span class="inline-block bg-gray-100 text-gray-500 text-xs font-medium px-2 py-0.5 rounded-full">low</span>
