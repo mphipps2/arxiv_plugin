@@ -45,7 +45,7 @@ Then classify all papers and use Bash to write the output JSON to `output_path`.
 **Retrieval & Knowledge**
 - `rag-retrieval` — RAG architectures & retrieval methods
 - `memory-replay` — Memory replay & external memory systems
-- `structured-data` — Structured data / SQL / tabular reasoning
+- `structured-data` — Structured data / tabular reasoning / knowledge graphs
 
 **Safety & Reliability**
 - `robustness-redteam` — Robustness, jailbreaks & red-teaming

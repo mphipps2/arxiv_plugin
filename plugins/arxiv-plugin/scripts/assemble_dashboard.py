@@ -51,7 +51,7 @@ TOPIC_LABELS = {
     "continual-learning": "Continual / lifelong learning",
     "rag-retrieval": "RAG architectures & retrieval methods",
     "memory-replay": "Memory replay & external memory systems",
-    "structured-data": "Structured data / SQL / tabular reasoning",
+    "structured-data": "Structured data / tabular reasoning / knowledge graphs",
     "robustness-redteam": "Robustness, jailbreaks & red-teaming",
     "hallucination": "Hallucination detection & mitigation",
     "uncertainty-calibration": "Uncertainty quantification / calibration",
