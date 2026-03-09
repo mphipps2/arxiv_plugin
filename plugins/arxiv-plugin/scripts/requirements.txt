@@ -1,3 +1,5 @@
 arxiv
 jinja2
+pymupdf
 pyyaml
+requests

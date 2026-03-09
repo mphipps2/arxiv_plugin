@@ -2,7 +2,6 @@
 description: "Generate a deep-dive analysis report for an arXiv paper"
 argument-hint: "<arxiv-id or search query>"
 allowed-tools:
-  - WebFetch
   - Bash
   - Read
 model: sonnet
@@ -18,22 +17,40 @@ The user provides either:
 
 ## Steps
 
-1. **Resolve paper**: If the argument looks like an arXiv ID (contains digits and dots, possibly with a version suffix like v1), use WebFetch to fetch `https://arxiv.org/api/query?id_list=<arxiv_id>` with prompt: "Extract the paper as JSON with fields: id, title, authors (array), abstract (COMPLETE text verbatim), published, categories (array), pdf_url, arxiv_url. Return ONLY the JSON object."
+### 1. Fetch paper metadata and PDF text (Bash)
 
-   Otherwise, search by query: use WebFetch to fetch `https://arxiv.org/api/query?search_query=all:<query>&max_results=5&sortBy=relevance` with prompt: "Extract each paper entry as a JSON array. For each paper include: id (just the arxiv id like '2603.05504v1'), title, authors (array), abstract (COMPLETE text verbatim), published, categories (array), pdf_url, arxiv_url. Return ONLY the JSON array." Show the user the top results and use the first result.
+If the argument looks like an arXiv ID (contains digits and dots, possibly with a version suffix like v1):
 
-2. **Fetch PDF context**: Use WebFetch to read the paper's PDF URL to get additional context from the paper content. If WebFetch fails, proceed with the abstract alone.
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/scripts/fetch_paper.py --id <arxiv_id> --pdf-text
+```
 
-3. **Analyze the paper**: Based on the abstract and any PDF content, produce an analysis with these fields:
-   - **tldr**: A 1-2 sentence summary accessible to a technical audience.
-   - **problem**: What problem does the paper address? Why is it important?
-   - **approach**: What methodology or technique does the paper propose?
-   - **results**: What are the key findings and how do they compare to prior work?
-   - **limitations**: What are the acknowledged or apparent limitations?
-   - **related_work**: What are the most relevant related papers or research directions?
-   - **relevance**: Why might this paper matter to an AI/ML practitioner?
+Otherwise, search by query:
 
-4. **Assemble report JSON**: Build a JSON object:
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/scripts/fetch_paper.py --query "<query>"
+```
+
+If searching by query, the script returns up to 5 results. Show the user the top results and then re-run with `--id` for the chosen paper plus `--pdf-text`.
+
+The script outputs JSON with `papers` (array of paper metadata) and optionally `pdf_text` (extracted text from the first 20 pages of the PDF).
+
+### 2. Analyze the paper
+
+Based on the abstract AND the extracted PDF text (if available), produce an analysis with these fields:
+- **tldr**: A 1-2 sentence summary accessible to a technical audience.
+- **problem**: What problem does the paper address? Why is it important?
+- **approach**: What methodology or technique does the paper propose?
+- **results**: What are the key findings and how do they compare to prior work?
+- **limitations**: What are the acknowledged or apparent limitations?
+- **related_work**: What are the most relevant related papers or research directions?
+- **relevance**: Why might this paper matter to an AI/ML practitioner?
+
+When PDF text is available, use it to ground the analysis in specific details from the paper (architecture names, hyperparameters, ablation results, etc.) rather than inferring from the abstract alone. Be explicit about what comes from the paper vs. general knowledge.
+
+### 3. Assemble report JSON and generate HTML
+
+Build a JSON object:
 ```json
 {
   "paper": {"id": "...", "title": "...", "authors": [], "published": "...", "categories": [], "arxiv_url": "...", "pdf_url": "..."},
@@ -41,9 +58,13 @@ The user provides either:
 }
 ```
 
-5. **Generate HTML**: Pipe the JSON to the generator:
+Write the JSON to a temp file and pipe it to the generator:
 ```bash
-echo '<json_string>' | python ${CLAUDE_PLUGIN_ROOT}/scripts/generate_report.py
+cat /tmp/arxiv_report_data.json | python ${CLAUDE_PLUGIN_ROOT}/scripts/generate_report.py --output-dir OUTPUT_DIR
 ```
 
-6. **Report**: Tell the user the path to the generated HTML file and provide a brief summary of the paper.
+**Output directory:** Determine a writable location for output and pass it via `--output-dir`.
+
+### 4. Report
+
+Tell the user the path to the generated HTML file and provide a brief summary of the paper.
