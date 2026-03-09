@@ -80,6 +80,7 @@ def main():
     group.add_argument("--id", help="arXiv paper ID (e.g. 2603.02926)")
     group.add_argument("--query", help="Search query to find a paper")
     parser.add_argument("--pdf-text", action="store_true", help="Extract text from PDF")
+    parser.add_argument("--max-pages", type=int, default=20, help="Max PDF pages to extract (default 20)")
     parser.add_argument("--max-results", type=int, default=5, help="Max search results for --query")
     args = parser.parse_args()
 
@@ -107,7 +108,7 @@ def main():
     output = {"papers": papers, "count": len(papers)}
 
     if args.pdf_text and papers:
-        pdf_text = extract_pdf_text(papers[0]["pdf_url"])
+        pdf_text = extract_pdf_text(papers[0]["pdf_url"], max_pages=args.max_pages)
         if pdf_text:
             output["pdf_text"] = pdf_text
 
