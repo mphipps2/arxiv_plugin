@@ -92,6 +92,8 @@ Calculate `week_end` = yesterday's date and `week_start` = `week_end - lookback_
 
 **IMPORTANT:** The date range is `week_start` through `week_end` (yesterday). Do NOT include today's date — today's papers are still arriving and would produce incomplete results. Pass exactly these dates to both `fetch_papers.py` and `assemble_dashboard.py`.
 
+**Output directory:** The config's `output_dir` may be a relative path that isn't writable in all environments. Determine a writable location for output (e.g. `./arxiv-output` in the current workspace) and pass it explicitly via `--output-dir` to both scripts. Use this same resolved path when referencing cache files in later steps.
+
 ### 2. Fetch papers (Bash)
 
 Run the fetch script to download papers day-by-day, with automatic caching:
@@ -99,6 +101,7 @@ Run the fetch script to download papers day-by-day, with automatic caching:
 ```bash
 python ${CLAUDE_PLUGIN_ROOT}/scripts/fetch_papers.py \
   --config ${CLAUDE_PLUGIN_ROOT}/config.yaml \
+  --output-dir OUTPUT_DIR \
   --start-date YYYY-MM-DD \
   --end-date YYYY-MM-DD
 ```
@@ -133,6 +136,7 @@ Run the assembly script to merge papers and classifications into the dashboard d
 ```bash
 python ${CLAUDE_PLUGIN_ROOT}/scripts/assemble_dashboard.py \
   --config ${CLAUDE_PLUGIN_ROOT}/config.yaml \
+  --output-dir OUTPUT_DIR \
   --start-date YYYY-MM-DD \
   --end-date YYYY-MM-DD
 ```
@@ -160,7 +164,7 @@ Update the assembled JSON: set `top_picks` and `weekly_narrative` fields. Remove
 Pipe the final JSON to the generator script:
 
 ```bash
-cat /tmp/weekly_dashboard_data.json | python ${CLAUDE_PLUGIN_ROOT}/scripts/generate_weekly_dashboard.py
+cat /tmp/weekly_dashboard_data.json | python ${CLAUDE_PLUGIN_ROOT}/scripts/generate_weekly_dashboard.py --output-dir OUTPUT_DIR
 ```
 
 ### 7. Report

@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
-"""Generate weekly dashboard HTML from JSON on stdin."""
+"""Generate weekly dashboard HTML from JSON on stdin.
 
+Usage:
+    cat data.json | python generate_weekly_dashboard.py [--output-dir DIR]
+"""
+
+import argparse
 import json
 import os
 import sys
@@ -8,6 +13,10 @@ from pathlib import Path
 
 import yaml
 from jinja2 import Environment, FileSystemLoader
+
+parser = argparse.ArgumentParser(description="Generate weekly dashboard HTML")
+parser.add_argument("--output-dir", help="Output directory (overrides config)")
+args = parser.parse_args()
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 TEMPLATE_DIR = SCRIPT_DIR / "templates"
@@ -20,7 +29,7 @@ try:
 except FileNotFoundError:
     config = {}
 
-output_dir = Path(config.get("output_dir", "./arxiv-output"))
+output_dir = Path(args.output_dir) if args.output_dir else Path(config.get("output_dir", "./arxiv-output"))
 output_dir.mkdir(parents=True, exist_ok=True)
 
 data = json.loads(sys.stdin.read())

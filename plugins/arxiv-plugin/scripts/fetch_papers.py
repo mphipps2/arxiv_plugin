@@ -108,13 +108,14 @@ def main():
     parser.add_argument("--config", required=True, help="Path to config.yaml")
     parser.add_argument("--start-date", required=True, help="Start date YYYY-MM-DD")
     parser.add_argument("--end-date", required=True, help="End date YYYY-MM-DD")
+    parser.add_argument("--output-dir", help="Output directory (overrides config)")
     args = parser.parse_args()
 
     with open(args.config) as f:
         config = yaml.safe_load(f)
 
     categories = config.get("categories", ["cs.AI", "cs.LG", "cs.CL", "cs.CV", "stat.ML"])
-    output_dir = Path(config.get("output_dir", "./arxiv-output"))
+    output_dir = Path(args.output_dir) if args.output_dir else Path(config.get("output_dir", "./arxiv-output"))
     cache_dir = output_dir / "cache" / "papers"
     cache_dir.mkdir(parents=True, exist_ok=True)
 
