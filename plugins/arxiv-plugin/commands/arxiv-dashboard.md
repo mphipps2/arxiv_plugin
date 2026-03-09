@@ -2,8 +2,7 @@
 description: "Generate a weekly AI engineering dashboard with curated picks, topic clustering, and relevance scoring"
 argument-hint: "[lookback_days: N, default 7]"
 allowed-tools:
-  - WebFetch
-  - Task
+  - Agent
   - Bash
   - Read
 model: sonnet
@@ -13,7 +12,7 @@ Generate a weekly AI engineering dashboard that classifies papers by topic, scor
 
 ## Arguments
 
-The user may pass a number for `lookback_days` to override the config default (e.g. `/arxiv-dashboard 14` for two weeks). They may also pass `--institutions` to include institution enrichment, but do not prompt for this — only run it if explicitly requested.
+The user may pass a number for `lookback_days` to override the config default (e.g. `/arxiv-dashboard 14` for two weeks).
 
 ## Topic Taxonomy
 
@@ -32,7 +31,7 @@ The user may pass a number for `lookback_days` to override the config default (e
 **Retrieval & Knowledge**
 - `rag-retrieval` — RAG architectures & retrieval methods
 - `memory-replay` — Memory replay & external memory systems
-- `structured-data` — Structured data / SQL / tabular reasoning
+- `structured-data` — Structured data / SQL / knowledge graphs
 
 **Safety & Reliability**
 - `robustness-redteam` — Robustness, jailbreaks & red-teaming
@@ -85,105 +84,78 @@ The user may pass a number for `lookback_days` to override the config default (e
 
 ## Steps
 
-### 1. Read config
+### 1. Read config & compute dates
 
 Use Read to load `${CLAUDE_PLUGIN_ROOT}/config.yaml`. Get `categories`, `lookback_days` (default 7), and `output_dir`.
 
-### 2. Compute date range
-
 Calculate `week_end` = yesterday's date and `week_start` = `week_end - lookback_days + 1`. If the user provided a custom lookback_days argument, use that instead of the config value.
 
-### 3. Fetch papers
+### 2. Fetch papers (Bash)
 
-Fetch papers from the arXiv Atom API using WebFetch. IMPORTANT: Always use the exact URL pattern below — do NOT use the HTML search interface (arxiv.org/search/) or any other endpoint. Build the URL:
+Run the fetch script to download papers day-by-day, with automatic caching:
+
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/scripts/fetch_papers.py \
+  --config ${CLAUDE_PLUGIN_ROOT}/config.yaml \
+  --start-date YYYY-MM-DD \
+  --end-date YYYY-MM-DD
+```
+
+This handles all caching logic: skips days already cached, always re-fetches today, re-fetches yesterday only on first run of the day.
+
+### 3. Classify (parallel subagents)
+
+Check which days in the date range still need classification by looking for missing files in `{output_dir}/cache/classified/YYYY-MM-DD.json`.
+
+For each day that needs classification, spawn a `paper-classifier` agent (`${CLAUDE_PLUGIN_ROOT}/agents/paper-classifier.md`) using the Agent tool. Each agent receives:
 
 ```
-https://arxiv.org/api/query?search_query=(cat:cs.AI+OR+cat:cs.LG+OR+cat:cs.CL+OR+cat:cs.CV+OR+cat:stat.ML)+AND+submittedDate:[YYYYMMDD0000+TO+YYYYMMDD2359]&start=0&max_results=100&sortBy=submittedDate&sortOrder=descending
+Classify the papers in this file.
+papers_path: {output_dir}/cache/papers/YYYY-MM-DD.json
+output_path: {output_dir}/cache/classified/YYYY-MM-DD.json
 ```
 
-Replace the categories with those from config (joined with `+OR+`, each prefixed with `cat:`), and replace the date placeholders with `week_start` and `week_end` (formatted as YYYYMMDD, no dashes).
+**Launch all agents in parallel** (one per day). On repeat runs, most days are cached so only 1-2 agents are needed.
 
-Use this prompt with WebFetch:
-> Extract every paper entry as a JSON array. For each paper include these exact fields: id (just the arxiv id like "2603.05504v1"), title (full exact title), authors (array of name strings), abstract (the COMPLETE summary text verbatim — do NOT summarize or shorten it), published (the date string), categories (array of all category strings), pdf_url, arxiv_url. Return ONLY the JSON array, no other text.
+Skip days where the papers cache file has 0 papers — write an empty classification file instead:
+```json
+{"classified_papers": []}
+```
 
-Paginate by incrementing the `start` parameter by 100 until fewer than 100 results are returned. Merge all pages and deduplicate by paper ID.
+Wait for all agents to complete before proceeding.
 
-### 4. Enrich institutions (ONLY if `--institutions` flag is present)
+### 4. Assemble (Bash)
 
-If the user passed `--institutions`, enrich papers with institutional affiliations via the OpenAlex API. For each arXiv ID, use WebFetch to fetch `https://api.openalex.org/works?filter=ids.arxiv:<ARXIV_ID>` with prompt: "Extract institution names from the authorships. Return a JSON object with fields: arxiv_id and institutions (array of {name, country} objects). Return ONLY the JSON object."
+Run the assembly script to merge papers and classifications into the dashboard data structure:
 
-Batch these lookups (don't fire hundreds at once — do ~20 at a time). Aggregate institution counts across all papers.
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/scripts/assemble_dashboard.py \
+  --config ${CLAUDE_PLUGIN_ROOT}/config.yaml \
+  --start-date YYYY-MM-DD \
+  --end-date YYYY-MM-DD
+```
 
-Otherwise, skip this step entirely — set `institutions` to an empty array `[]`.
+This outputs the path to the assembled JSON file.
 
-### 5. Parallel classification
+### 5. Curate & narrate (LLM)
 
-Split papers into batches of ~100 papers each. For each batch, create a Task using the `paper-classifier` agent (`${CLAUDE_PLUGIN_ROOT}/agents/paper-classifier.md`).
+Use Read to load the assembled JSON file. Look at the `high_relevance_papers` array (typically 15-30 papers).
 
-Pass each task a prompt containing:
-- The batch of papers (for each paper include: id, title, abstract, categories)
-- Instruction to classify per the taxonomy
-
-Use TaskCreate to spawn all batch tasks in parallel. Then poll with TaskGet/TaskOutput until all complete.
-
-Parse the JSON output from each classifier task. Merge all `classified_papers` arrays into a single list. Create a lookup map: `paper_id -> {topic, group, relevance}`.
-
-### 6. Aggregate and curate
-
-**Build topic_groups structure:**
-For each group in order: "Model Architecture & Capabilities", "Training & Optimization", "Retrieval & Knowledge", "Safety & Reliability", "Applications", "Emerging", "Other":
-- For each topic in that group, collect all papers classified under it
-- For each paper, build the full paper object with: id, title, authors, categories, abstract, pdf_url, arxiv_url, relevance, published (date)
-- Sort papers: high relevance first, then medium, then low
-- Count: paper_count, high_relevance_count
-- Omit topics with 0 papers from the output
-
-Sort groups by total_papers descending, but always put "Other" last.
-
-**Build summary:**
-- total_papers: total count
-- high_relevance_count, medium_relevance_count, low_relevance_count
-- papers_per_day: for each date in the range, count papers published that day
-
-**Build categories:** count papers per arXiv category, sort descending.
-
-**Top picks:** Scan all papers with relevance "high". Select 5-10 must-reads. For each, write a 1-2 sentence rationale explaining why this matters to an AI engineer. Include: id, title, authors, categories, pdf_url, arxiv_url, rationale, topic, group.
+**Top picks:** Select 5-10 must-reads from the high-relevance papers. For each, write a 1-2 sentence rationale explaining why this matters to an AI engineer. Include: id, title, authors, categories, pdf_url, arxiv_url, rationale, topic, group.
 
 **Weekly narrative:** Write 2-3 paragraphs summarizing the week's key developments in AI/ML research. Mention specific papers and trends. Write for an AI engineer audience — focus on what's actionable and noteworthy.
 
-### 7. Assemble JSON and generate HTML
+Update the assembled JSON: set `top_picks` and `weekly_narrative` fields. Remove the `high_relevance_papers` field (it was only needed for curation). Write the updated JSON back to a temp file (e.g. `/tmp/weekly_dashboard_data.json`).
 
-Build the full JSON object:
-```json
-{
-  "week_start": "YYYY-MM-DD",
-  "week_end": "YYYY-MM-DD",
-  "summary": {
-    "total_papers": N,
-    "high_relevance_count": N,
-    "medium_relevance_count": N,
-    "low_relevance_count": N,
-    "papers_per_day": [{"date": "YYYY-MM-DD", "count": N}]
-  },
-  "weekly_narrative": "...",
-  "top_picks": [...],
-  "topic_groups": [...],
-  "categories": [...],
-  "institutions": [...]
-}
-```
+### 6. Render (Bash)
 
-Pipe the JSON to the generator script:
-```bash
-echo '<json_string>' | python ${CLAUDE_PLUGIN_ROOT}/scripts/generate_weekly_dashboard.py
-```
+Pipe the final JSON to the generator script:
 
-IMPORTANT: The JSON may be very large. Write it to a temporary file and pipe it:
 ```bash
 cat /tmp/weekly_dashboard_data.json | python ${CLAUDE_PLUGIN_ROOT}/scripts/generate_weekly_dashboard.py
 ```
 
-### 8. Report
+### 7. Report
 
 Tell the user:
 - The path to the generated HTML file
